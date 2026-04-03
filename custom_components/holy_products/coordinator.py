@@ -12,7 +12,7 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
 
-from .const import API_BASE_URL, DEFAULT_PAGE_LIMIT, EVENT_NEW_PRODUCT
+from .const import API_BASE_URL, DEFAULT_PAGE_LIMIT, EVENT_NEW_PRODUCT, EVENT_PRODUCT_AVAILABLE
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -28,6 +28,7 @@ class HolyProductsCoordinator(DataUpdateCoordinator[dict[int, dict[str, Any]]]):
         scan_interval: int,
         product_types: list[str] | None = None,
         tags: list[str] | None = None,
+        notify_available: bool = True,
     ) -> None:
         """Initialize the coordinator."""
         super().__init__(
@@ -38,9 +39,12 @@ class HolyProductsCoordinator(DataUpdateCoordinator[dict[int, dict[str, Any]]]):
         )
         self._product_types = product_types or []
         self._tags = tags or []
+        self._notify_available = notify_available
         self._known_product_ids: set[int] = set()
+        self._variant_availability: dict[int, bool] = {}
         self._first_run = True
         self.new_products: list[dict[str, Any]] = []
+        self.back_in_stock_products: list[dict[str, Any]] = []
 
     async def _fetch_all_products(self) -> list[dict[str, Any]]:
         """Fetch all products with pagination."""
@@ -139,14 +143,24 @@ class HolyProductsCoordinator(DataUpdateCoordinator[dict[int, dict[str, Any]]]):
             if pid is not None:
                 products_by_id[pid] = p
 
-        # Detect new products
+        # Detect new products and back-in-stock variants
         current_ids = set(products_by_id.keys())
         self.new_products = []
+        self.back_in_stock_products = []
+
+        # Build current variant availability map: variant_id -> available
+        current_variant_availability: dict[int, bool] = {}
+        for product in products_by_id.values():
+            for variant in product.get("variants", []):
+                vid = variant.get("id")
+                if vid is not None:
+                    current_variant_availability[vid] = bool(variant.get("available", False))
 
         if self._first_run:
             self._first_run = False
             _LOGGER.info("Initial fetch: %d products loaded", len(products_by_id))
         else:
+            # Detect new products
             new_ids = current_ids - self._known_product_ids
             if new_ids:
                 _LOGGER.info("Detected %d new product(s)", len(new_ids))
@@ -156,5 +170,32 @@ class HolyProductsCoordinator(DataUpdateCoordinator[dict[int, dict[str, Any]]]):
                     self.new_products.append(event_data)
                     self.hass.bus.async_fire(EVENT_NEW_PRODUCT, event_data)
 
+            # Detect back-in-stock variants
+            if self._notify_available:
+                notified_product_ids: set[int] = set()
+                for product in products_by_id.values():
+                    pid = product.get("id")
+                    if pid is None or pid in new_ids:
+                        continue
+                    for variant in product.get("variants", []):
+                        vid = variant.get("id")
+                        if vid is None:
+                            continue
+                        was_available = self._variant_availability.get(vid, True)
+                        is_available = current_variant_availability.get(vid, False)
+                        if not was_available and is_available and pid not in notified_product_ids:
+                            notified_product_ids.add(pid)
+                            event_data = self._extract_product_event_data(product)
+                            event_data["variant_id"] = vid
+                            event_data["variant_title"] = variant.get("title", "")
+                            self.back_in_stock_products.append(event_data)
+                            self.hass.bus.async_fire(EVENT_PRODUCT_AVAILABLE, event_data)
+                            _LOGGER.info(
+                                "Product back in stock: %s (variant %s)",
+                                product.get("title", ""),
+                                variant.get("title", ""),
+                            )
+
         self._known_product_ids = current_ids
+        self._variant_availability = current_variant_availability
         return products_by_id

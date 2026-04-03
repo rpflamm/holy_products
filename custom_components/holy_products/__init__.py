@@ -6,6 +6,7 @@ from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 
 from .const import (
+    CONF_NOTIFY_AVAILABLE,
     CONF_PRODUCT_TYPES,
     CONF_SCAN_INTERVAL,
     CONF_TAGS,
@@ -30,11 +31,14 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     tags_raw = config.get(CONF_TAGS, "")
     tags = [t.strip() for t in tags_raw.split(",") if t.strip()] if tags_raw else []
 
+    notify_available = config.get(CONF_NOTIFY_AVAILABLE, True)
+
     coordinator = HolyProductsCoordinator(
         hass,
         scan_interval=scan_interval,
         product_types=product_types,
         tags=tags,
+        notify_available=notify_available,
     )
 
     await coordinator.async_config_entry_first_refresh()

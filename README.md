@@ -9,7 +9,8 @@ A custom integration for [Home Assistant](https://www.home-assistant.io/) that p
 - **Configurable polling interval** (default: 5 minutes)
 - **Filter by product type or tags** to only track the categories you care about
 - **Sensors** for total product count, per-product-type counts, and new products
-- **Automation-ready** – use the `holy_products_new_product` event to trigger notifications, scripts, or any HA action
+- **Back-in-stock detection** – fires events when a previously unavailable product variant becomes available again
+- **Automation-ready** – use the `holy_products_new_product` and `holy_products_product_available` events to trigger notifications, scripts, or any HA action
 
 ## Installation
 
@@ -37,6 +38,7 @@ A custom integration for [Home Assistant](https://www.home-assistant.io/) that p
 | **Scan Interval** | Polling interval in minutes | `5` |
 | **Product Types** | Comma-separated list of product types to track (leave empty for all) | _(empty)_ |
 | **Tags** | Comma-separated list of tags to filter by (leave empty for all) | _(empty)_ |
+| **Notify Back in Stock** | Enable notifications when products become available again | `true` |
 
 All options can be changed later via **Options** on the integration card.
 
@@ -58,6 +60,12 @@ The integration creates the following sensors:
 - **State**: Number of new products found in the most recent update.
 - **Attributes**:
   - `products` – List of new products with `id`, `title`, `product_type`, `tags`, `price`, `image_url`, and `url`.
+
+### `sensor.holy_products_back_in_stock`
+
+- **State**: Number of products that became available again in the most recent update.
+- **Attributes**:
+  - `products` – List of back-in-stock products with `product_id`, `title`, `product_type`, `tags`, `price`, `image_url`, `url`, `variant_id`, and `variant_title`.
 
 ### `sensor.holy_products_{product_type}`
 
@@ -88,7 +96,28 @@ Fired for **each** newly detected product. The event payload contains:
 }
 ```
 
-> **Note:** On the first run after installation or restart, all products are loaded silently without firing events. Only products that appear in subsequent updates are treated as new.
+### `holy_products_product_available`
+
+Fired when a product variant changes from unavailable to available (back in stock). The event payload contains:
+
+```json
+{
+  "product_id": 12345,
+  "title": "Energy Drink Mango",
+  "handle": "energy-drink-mango",
+  "product_type": "Energy Drink",
+  "tags": ["Bestseller"],
+  "price": "2.99",
+  "compare_at_price": "3.99",
+  "image_url": "https://cdn.shopify.com/...",
+  "url": "https://de.holy.com/products/energy-drink-mango",
+  "variants_count": 3,
+  "variant_id": 67890,
+  "variant_title": "12-Pack"
+}
+```
+
+> **Note:** On the first run after installation or restart, all products are loaded silently without firing events. Only products that appear in subsequent updates are treated as new. Variant availability is tracked from the first run onward – only transitions from unavailable to available trigger back-in-stock events.
 
 ## Automation Examples
 
@@ -145,6 +174,24 @@ automation:
           message: "New Energy Drink: {{ trigger.event.data.title }}"
 ```
 
+### Notify when a product is back in stock
+
+```yaml
+automation:
+  - alias: "Notify on HOLY product back in stock"
+    trigger:
+      - platform: event
+        event_type: holy_products_product_available
+    action:
+      - service: notify.mobile_app_your_phone
+        data:
+          title: "Back in Stock!"
+          message: "{{ trigger.event.data.title }} ({{ trigger.event.data.variant_title }}) is available again!"
+          data:
+            image: "{{ trigger.event.data.image_url }}"
+            url: "{{ trigger.event.data.url }}"
+```
+
 ## How It Works
 
 1. The integration polls `https://de.holy.com/products.json` using pagination (`limit=250` per page).
@@ -152,7 +199,8 @@ automation:
 3. Optional filters (product type, tags) are applied.
 4. Product IDs are compared against the previously known set.
 5. For each new product, a `holy_products_new_product` event is fired on the Home Assistant event bus.
-6. Sensor entities are updated with the latest data.
+6. Variant availability (`available` field) is tracked. When a variant changes from unavailable to available, a `holy_products_product_available` event is fired.
+7. Sensor entities are updated with the latest data.
 
 ## API Details
 
@@ -194,8 +242,8 @@ custom_components/
     manifest.json        # Integration metadata
     config_flow.py       # Config flow & options flow (UI configuration)
     const.py             # Constants (domain, API URL, defaults)
-    coordinator.py       # DataUpdateCoordinator (API fetching, pagination, new product detection)
-    sensor.py            # Sensor platform (product count, per-type, new products)
+    coordinator.py       # DataUpdateCoordinator (API fetching, pagination, new product & availability detection)
+    sensor.py            # Sensor platform (product count, per-type, new products, back in stock)
     strings.json         # UI strings (English)
     translations/
       de.json            # UI strings (German)

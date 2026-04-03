@@ -10,6 +10,7 @@ from homeassistant.core import callback
 from homeassistant.data_entry_flow import FlowResult
 
 from .const import (
+    CONF_NOTIFY_AVAILABLE,
     CONF_PRODUCT_TYPES,
     CONF_SCAN_INTERVAL,
     CONF_TAGS,
@@ -37,6 +38,10 @@ def _build_schema(
                 CONF_TAGS,
                 default=defaults.get(CONF_TAGS, ""),
             ): str,
+            vol.Optional(
+                CONF_NOTIFY_AVAILABLE,
+                default=defaults.get(CONF_NOTIFY_AVAILABLE, True),
+            ): bool,
         }
     )
 
@@ -88,6 +93,7 @@ class HolyProductsOptionsFlow(OptionsFlow):
             CONF_SCAN_INTERVAL: current.get(CONF_SCAN_INTERVAL, DEFAULT_SCAN_INTERVAL) // 60,
             CONF_PRODUCT_TYPES: current.get(CONF_PRODUCT_TYPES, ""),
             CONF_TAGS: current.get(CONF_TAGS, ""),
+            CONF_NOTIFY_AVAILABLE: current.get(CONF_NOTIFY_AVAILABLE, True),
         }
 
         return self.async_show_form(

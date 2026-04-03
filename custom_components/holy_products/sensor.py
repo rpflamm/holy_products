@@ -27,6 +27,7 @@ async def async_setup_entry(
     entities: list[SensorEntity] = [
         HolyProductsCountSensor(coordinator, entry),
         HolyProductsNewSensor(coordinator, entry),
+        HolyProductsBackInStockSensor(coordinator, entry),
     ]
 
     # Create per-product-type sensors
@@ -112,6 +113,28 @@ class HolyProductsNewSensor(CoordinatorEntity, SensorEntity):
     def extra_state_attributes(self) -> dict[str, Any]:
         """Return new products list."""
         return {"products": self.coordinator.new_products}
+
+
+class HolyProductsBackInStockSensor(CoordinatorEntity, SensorEntity):
+    """Sensor showing products that became available again."""
+
+    _attr_icon = "mdi:package-check"
+
+    def __init__(self, coordinator: HolyProductsCoordinator, entry: ConfigEntry) -> None:
+        """Initialize."""
+        super().__init__(coordinator)
+        self._attr_unique_id = f"{entry.entry_id}_back_in_stock"
+        self._attr_name = "HOLY Products Back in Stock"
+
+    @property
+    def native_value(self) -> int:
+        """Return count of back-in-stock products."""
+        return len(self.coordinator.back_in_stock_products)
+
+    @property
+    def extra_state_attributes(self) -> dict[str, Any]:
+        """Return back-in-stock products list."""
+        return {"products": self.coordinator.back_in_stock_products}
 
 
 class HolyProductsTypeSensor(CoordinatorEntity, SensorEntity):
