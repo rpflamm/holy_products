@@ -1,4 +1,5 @@
 """DataUpdateCoordinator for HOLY Products."""
+
 from __future__ import annotations
 
 import asyncio
@@ -55,7 +56,7 @@ class HolyProductsCoordinator(DataUpdateCoordinator[dict[int, dict[str, Any]]]):
                     resp = await session.get(url)
                     resp.raise_for_status()
                     data = await resp.json()
-            except (aiohttp.ClientError, asyncio.TimeoutError) as err:
+            except (TimeoutError, aiohttp.ClientError) as err:
                 raise UpdateFailed(f"Error fetching page {page}: {err}") from err
 
             products = data.get("products", [])
@@ -88,7 +89,12 @@ class HolyProductsCoordinator(DataUpdateCoordinator[dict[int, dict[str, Any]]]):
         image_url = images[0].get("src", "") if images else ""
         handle = product.get("handle", "")
         tags_raw = product.get("tags", "")
-        tags_list = [t.strip() for t in tags_raw.split(",")] if isinstance(tags_raw, str) and tags_raw else tags_raw if isinstance(tags_raw, list) else []
+        if isinstance(tags_raw, str) and tags_raw:
+            tags_list = [t.strip() for t in tags_raw.split(",")]
+        elif isinstance(tags_raw, list):
+            tags_list = tags_raw
+        else:
+            tags_list = []
 
         return {
             "product_id": product.get("id"),
@@ -114,6 +120,7 @@ class HolyProductsCoordinator(DataUpdateCoordinator[dict[int, dict[str, Any]]]):
             filtered = [p for p in filtered if p.get("product_type", "").lower() in pt_lower]
         if self._tags:
             tags_lower = {t.lower() for t in self._tags}
+
             def has_tag(p: dict) -> bool:
                 raw = p.get("tags", "")
                 if isinstance(raw, str):
@@ -123,6 +130,7 @@ class HolyProductsCoordinator(DataUpdateCoordinator[dict[int, dict[str, Any]]]):
                 else:
                     ptags = set()
                 return bool(ptags & tags_lower)
+
             filtered = [p for p in filtered if has_tag(p)]
 
         products_by_id: dict[int, dict[str, Any]] = {}

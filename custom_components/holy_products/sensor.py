@@ -1,4 +1,5 @@
 """Sensor platform for HOLY Products."""
+
 from __future__ import annotations
 
 from collections import Counter
@@ -30,11 +31,7 @@ async def async_setup_entry(
 
     # Create per-product-type sensors
     if coordinator.data:
-        product_types = {
-            p.get("product_type", "")
-            for p in coordinator.data.values()
-            if p.get("product_type")
-        }
+        product_types = {p.get("product_type", "") for p in coordinator.data.values() if p.get("product_type")}
         for pt in sorted(product_types):
             entities.append(HolyProductsTypeSensor(coordinator, entry, pt))
 
@@ -42,7 +39,7 @@ async def async_setup_entry(
 
 
 def _slugify(text: str) -> str:
-    """Simple slugify for entity IDs."""
+    """Slugify text for use as entity IDs."""
     return text.lower().replace(" ", "_").replace("-", "_")
 
 
@@ -139,10 +136,7 @@ class HolyProductsTypeSensor(CoordinatorEntity, SensorEntity):
         """Get products of this type."""
         if not self.coordinator.data:
             return []
-        return [
-            p for p in self.coordinator.data.values()
-            if p.get("product_type", "") == self._product_type
-        ]
+        return [p for p in self.coordinator.data.values() if p.get("product_type", "") == self._product_type]
 
     @property
     def native_value(self) -> int:
@@ -158,10 +152,12 @@ class HolyProductsTypeSensor(CoordinatorEntity, SensorEntity):
             images = p.get("images", [])
             variants = p.get("variants", [])
             prices = [v.get("price") for v in variants if v.get("price") is not None]
-            summary.append({
-                "id": p.get("id"),
-                "title": p.get("title", ""),
-                "price": min(prices) if prices else None,
-                "image_url": images[0].get("src", "") if images else "",
-            })
+            summary.append(
+                {
+                    "id": p.get("id"),
+                    "title": p.get("title", ""),
+                    "price": min(prices) if prices else None,
+                    "image_url": images[0].get("src", "") if images else "",
+                }
+            )
         return {"products": summary}

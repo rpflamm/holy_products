@@ -1,4 +1,5 @@
 """Config flow for HOLY Products integration."""
+
 from __future__ import annotations
 
 from typing import Any
@@ -40,14 +41,12 @@ def _build_schema(
     )
 
 
-class HolyProductsConfigFlow(ConfigFlow, domain=DOMAIN):
+class HolyProductsConfigFlow(ConfigFlow, domain=DOMAIN):  # type: ignore[call-arg]
     """Handle a config flow for HOLY Products."""
 
     VERSION = 1
 
-    async def async_step_user(
-        self, user_input: dict[str, Any] | None = None
-    ) -> FlowResult:
+    async def async_step_user(self, user_input: dict[str, Any] | None = None) -> FlowResult:
         """Handle the initial step."""
         if user_input is not None:
             # Convert minutes to seconds for storage
@@ -78,9 +77,7 @@ class HolyProductsOptionsFlow(OptionsFlow):
         """Initialize options flow."""
         self._config_entry = config_entry
 
-    async def async_step_init(
-        self, user_input: dict[str, Any] | None = None
-    ) -> FlowResult:
+    async def async_step_init(self, user_input: dict[str, Any] | None = None) -> FlowResult:
         """Manage the options."""
         if user_input is not None:
             user_input[CONF_SCAN_INTERVAL] = user_input[CONF_SCAN_INTERVAL] * 60

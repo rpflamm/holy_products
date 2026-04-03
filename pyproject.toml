@@ -1,0 +1,49 @@
+[project]
+name = "holy-products-ha"
+version = "1.0.0"
+description = "HOLY Products Custom Integration for Home Assistant"
+requires-python = ">=3.12"
+
+[tool.ruff]
+target-version = "py312"
+line-length = 120
+
+[tool.ruff.lint]
+select = [
+    "E",      # pycodestyle errors
+    "W",      # pycodestyle warnings
+    "F",      # pyflakes
+    "I",      # isort
+    "UP",     # pyupgrade
+    "B",      # flake8-bugbear
+    "SIM",    # flake8-simplify
+    "N",      # pep8-naming
+    "D",      # pydocstyle
+    "S",      # flake8-bandit (security)
+    "C4",     # flake8-comprehensions
+    "RUF",    # ruff-specific rules
+    "T20",    # flake8-print
+    "LOG",    # flake8-logging
+    "ASYNC",  # flake8-async
+]
+ignore = [
+    "D100",   # Missing docstring in public module (handled per-file)
+    "D104",   # Missing docstring in public package
+    "D203",   # 1 blank line before class docstring (conflicts with D211)
+    "D213",   # Multi-line docstring summary on second line (conflicts with D212)
+]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**/*.py" = ["S101", "D"]  # Allow assert and skip docstrings in tests
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+
+[tool.mypy]
+python_version = "3.12"
+warn_return_any = true
+warn_unused_configs = true
+disallow_untyped_defs = true
+check_untyped_defs = true
+ignore_missing_imports = true
