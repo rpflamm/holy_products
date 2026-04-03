@@ -1,0 +1,31 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "HOLY Products Setup",
+        "description": "Configure the HOLY Products integration.",
+        "data": {
+          "scan_interval": "Update interval (minutes)",
+          "product_types": "Product types filter (comma-separated, optional)",
+          "tags": "Tags filter (comma-separated, optional)"
+        }
+      }
+    },
+    "abort": {
+      "already_configured": "HOLY Products is already configured."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "HOLY Products Options",
+        "description": "Adjust the HOLY Products integration settings.",
+        "data": {
+          "scan_interval": "Update interval (minutes)",
+          "product_types": "Product types filter (comma-separated, optional)",
+          "tags": "Tags filter (comma-separated, optional)"
+        }
+      }
+    }
+  }
+}
