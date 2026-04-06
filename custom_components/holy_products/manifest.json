@@ -1,10 +1,10 @@
 {
   "domain": "holy_products",
   "name": "HOLY Products",
-  "codeowners": [],
+  "codeowners": ["@rpflamm"],
   "config_flow": true,
   "documentation": "https://github.com/",
   "iot_class": "cloud_polling",
   "requirements": [],
-  "version": "1.0.0"
+  "version": "1.0.2"
 }
