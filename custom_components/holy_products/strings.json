@@ -8,7 +8,8 @@
           "scan_interval": "Update interval (minutes)",
           "product_types": "Product types filter (comma-separated, optional)",
           "tags": "Tags filter (comma-separated, optional)",
-          "notify_available": "Notify when products are back in stock"
+          "notify_available": "Notify when products are back in stock",
+          "notification_throttle": "Notification throttle (hours)"
         }
       }
     },
@@ -25,7 +26,8 @@
           "scan_interval": "Update interval (minutes)",
           "product_types": "Product types filter (comma-separated, optional)",
           "tags": "Tags filter (comma-separated, optional)",
-          "notify_available": "Notify when products are back in stock"
+          "notify_available": "Notify when products are back in stock",
+          "notification_throttle": "Notification throttle (hours)"
         }
       }
     }

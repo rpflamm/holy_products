@@ -6,10 +6,12 @@ from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 
 from .const import (
+    CONF_NOTIFICATION_THROTTLE,
     CONF_NOTIFY_AVAILABLE,
     CONF_PRODUCT_TYPES,
     CONF_SCAN_INTERVAL,
     CONF_TAGS,
+    DEFAULT_NOTIFICATION_THROTTLE,
     DEFAULT_SCAN_INTERVAL,
     DOMAIN,
 )
@@ -32,6 +34,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     tags = [t.strip() for t in tags_raw.split(",") if t.strip()] if tags_raw else []
 
     notify_available = config.get(CONF_NOTIFY_AVAILABLE, True)
+    notification_throttle = config.get(CONF_NOTIFICATION_THROTTLE, DEFAULT_NOTIFICATION_THROTTLE)
 
     coordinator = HolyProductsCoordinator(
         hass,
@@ -39,6 +42,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         product_types=product_types,
         tags=tags,
         notify_available=notify_available,
+        notification_throttle=notification_throttle,
     )
 
     await coordinator.async_config_entry_first_refresh()

@@ -10,10 +10,12 @@ from homeassistant.core import callback
 from homeassistant.data_entry_flow import FlowResult
 
 from .const import (
+    CONF_NOTIFICATION_THROTTLE,
     CONF_NOTIFY_AVAILABLE,
     CONF_PRODUCT_TYPES,
     CONF_SCAN_INTERVAL,
     CONF_TAGS,
+    DEFAULT_NOTIFICATION_THROTTLE,
     DEFAULT_SCAN_INTERVAL,
     DOMAIN,
 )
@@ -42,6 +44,10 @@ def _build_schema(
                 CONF_NOTIFY_AVAILABLE,
                 default=defaults.get(CONF_NOTIFY_AVAILABLE, True),
             ): bool,
+            vol.Optional(
+                CONF_NOTIFICATION_THROTTLE,
+                default=defaults.get(CONF_NOTIFICATION_THROTTLE, DEFAULT_NOTIFICATION_THROTTLE),
+            ): vol.All(vol.Coerce(int), vol.Range(min=0)),
         }
     )
 
@@ -94,6 +100,9 @@ class HolyProductsOptionsFlow(OptionsFlow):
             CONF_PRODUCT_TYPES: current.get(CONF_PRODUCT_TYPES, ""),
             CONF_TAGS: current.get(CONF_TAGS, ""),
             CONF_NOTIFY_AVAILABLE: current.get(CONF_NOTIFY_AVAILABLE, True),
+            CONF_NOTIFICATION_THROTTLE: current.get(
+                CONF_NOTIFICATION_THROTTLE, DEFAULT_NOTIFICATION_THROTTLE
+            ),
         }
 
         return self.async_show_form(
