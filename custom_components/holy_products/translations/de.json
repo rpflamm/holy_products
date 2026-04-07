@@ -8,7 +8,8 @@
           "scan_interval": "Aktualisierungsintervall (Minuten)",
           "product_types": "Produkttypen-Filter (kommagetrennt, optional)",
           "tags": "Tags-Filter (kommagetrennt, optional)",
-          "notify_available": "Benachrichtigen wenn Produkte wieder verfügbar sind"
+          "notify_available": "Benachrichtigen wenn Produkte wieder verfügbar sind",
+          "notification_throttle": "Benachrichtigungs-Drosselung (Stunden)"
         }
       }
     },
@@ -25,7 +26,8 @@
           "scan_interval": "Aktualisierungsintervall (Minuten)",
           "product_types": "Produkttypen-Filter (kommagetrennt, optional)",
           "tags": "Tags-Filter (kommagetrennt, optional)",
-          "notify_available": "Benachrichtigen wenn Produkte wieder verfügbar sind"
+          "notify_available": "Benachrichtigen wenn Produkte wieder verfügbar sind",
+          "notification_throttle": "Benachrichtigungs-Drosselung (Stunden)"
         }
       }
     }

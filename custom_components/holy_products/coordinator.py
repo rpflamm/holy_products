@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import asyncio
 import logging
-from datetime import timedelta
+from datetime import datetime, timedelta
 from typing import Any
 
 import aiohttp
@@ -29,6 +29,7 @@ class HolyProductsCoordinator(DataUpdateCoordinator[dict[int, dict[str, Any]]]):
         product_types: list[str] | None = None,
         tags: list[str] | None = None,
         notify_available: bool = True,
+        notification_throttle: int = 24,
     ) -> None:
         """Initialize the coordinator."""
         super().__init__(
@@ -40,8 +41,10 @@ class HolyProductsCoordinator(DataUpdateCoordinator[dict[int, dict[str, Any]]]):
         self._product_types = product_types or []
         self._tags = tags or []
         self._notify_available = notify_available
+        self._notification_throttle = notification_throttle
         self._known_product_ids: set[int] = set()
         self._variant_availability: dict[int, bool] = {}
+        self._last_notified: dict[int, datetime] = {}
         self._first_run = True
         self.new_products: list[dict[str, Any]] = []
         self.back_in_stock_products: list[dict[str, Any]] = []
@@ -113,6 +116,24 @@ class HolyProductsCoordinator(DataUpdateCoordinator[dict[int, dict[str, Any]]]):
             "variants_count": len(variants),
         }
 
+    def _should_notify(self, product_id: int) -> bool:
+        """Check if a notification should be sent for a product based on throttle."""
+        if self._notification_throttle <= 0:
+            return True
+
+        last_notified = self._last_notified.get(product_id)
+        if last_notified is None:
+            return True
+
+        now = datetime.now()
+        if now - last_notified >= timedelta(hours=self._notification_throttle):
+            return True
+
+        _LOGGER.debug(
+            "Notification throttled for product %s. Last: %s", product_id, last_notified
+        )
+        return False
+
     async def _async_update_data(self) -> dict[int, dict[str, Any]]:
         """Fetch products, detect new ones, fire events."""
         all_products = await self._fetch_all_products()
@@ -165,10 +186,13 @@ class HolyProductsCoordinator(DataUpdateCoordinator[dict[int, dict[str, Any]]]):
             if new_ids:
                 _LOGGER.info("Detected %d new product(s)", len(new_ids))
                 for pid in new_ids:
+                    if not self._should_notify(pid):
+                        continue
                     product = products_by_id[pid]
                     event_data = self._extract_product_event_data(product)
                     self.new_products.append(event_data)
                     self.hass.bus.async_fire(EVENT_NEW_PRODUCT, event_data)
+                    self._last_notified[pid] = datetime.now()
 
             # Detect back-in-stock variants
             if self._notify_available:
@@ -183,13 +207,19 @@ class HolyProductsCoordinator(DataUpdateCoordinator[dict[int, dict[str, Any]]]):
                             continue
                         was_available = self._variant_availability.get(vid, True)
                         is_available = current_variant_availability.get(vid, False)
-                        if not was_available and is_available and pid not in notified_product_ids:
+                        if (
+                            not was_available
+                            and is_available
+                            and pid not in notified_product_ids
+                            and self._should_notify(pid)
+                        ):
                             notified_product_ids.add(pid)
                             event_data = self._extract_product_event_data(product)
                             event_data["variant_id"] = vid
                             event_data["variant_title"] = variant.get("title", "")
                             self.back_in_stock_products.append(event_data)
                             self.hass.bus.async_fire(EVENT_PRODUCT_AVAILABLE, event_data)
+                            self._last_notified[pid] = datetime.now()
                             _LOGGER.info(
                                 "Product back in stock: %s (variant %s)",
                                 product.get("title", ""),

@@ -10,6 +10,7 @@ A custom integration for [Home Assistant](https://www.home-assistant.io/) that p
 - **Filter by product type or tags** to only track the categories you care about
 - **Sensors** for total product count, per-product-type counts, and new products
 - **Back-in-stock detection** – fires events when a previously unavailable product variant becomes available again
+- **Notification throttling** – configurable delay (default: 24h) between notifications for the same product to prevent spam
 - **Automation-ready** – use the `holy_products_new_product` and `holy_products_product_available` events to trigger notifications, scripts, or any HA action
 
 ## Installation
@@ -39,6 +40,7 @@ A custom integration for [Home Assistant](https://www.home-assistant.io/) that p
 | **Product Types** | Comma-separated list of product types to track (leave empty for all) | _(empty)_ |
 | **Tags** | Comma-separated list of tags to filter by (leave empty for all) | _(empty)_ |
 | **Notify Back in Stock** | Enable notifications when products become available again | `true` |
+| **Notification Throttle** | Delay (in hours) between notifications for the same product (set to 0 to disable) | `24` |
 
 All options can be changed later via **Options** on the integration card.
 
@@ -200,7 +202,8 @@ automation:
 4. Product IDs are compared against the previously known set.
 5. For each new product, a `holy_products_new_product` event is fired on the Home Assistant event bus.
 6. Variant availability (`available` field) is tracked. When a variant changes from unavailable to available, a `holy_products_product_available` event is fired.
-7. Sensor entities are updated with the latest data.
+7. **Notification throttling**: Before firing an event for a product, the integration checks if the configured throttle period (default: 24h) has passed since the last notification for that specific product. This prevents duplicate alerts if a product quickly goes in and out of stock.
+8. Sensor entities are updated with the latest data.
 
 ## API Details
 
